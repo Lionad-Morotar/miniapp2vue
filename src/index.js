@@ -1,10 +1,10 @@
-import Compiler from "/lib";
+import Compiler from '/lib'
 
-var unsolvedFolder = "./swan/swan-template";
+var unsolvedFolder = '/src/swan/swan-template'
 
 var vuetpl = Compiler.convert(unsolvedFolder, {
-  plat: "swan",
-  type: "template"
-});
+    plat: 'swan',
+    type: 'template',
+})
 
-console.log("RESULT:", vuetpl);
+console.log('RESULT:', vuetpl)
