@@ -1,8 +1,10 @@
-document.getElementById("app").innerHTML = `
-<h1>Hello Parcel!</h1>
-<div>
-  Look
-  <a href="https://parceljs.org" target="_blank" rel="noopener noreferrer">here</a>
-  for more info about Parcel.
-</div>
-`;
+import Compiler from "/lib";
+
+var unsolvedFolder = "./swan/swan-template";
+
+var vuetpl = Compiler.convert(unsolvedFolder, {
+  plat: "swan",
+  type: "template"
+});
+
+console.log("RESULT:", vuetpl);
