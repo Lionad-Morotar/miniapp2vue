@@ -1,1 +1,9 @@
-https://uploads.codesandbox.io/uploads/user/fc197187-c485-4295-b5b9-47c639157217/5w4f-.gitignore
+*~
+*swp
+*.swp
+.gitCOMMIT_EDITMSG
+*.svn
+node_modules/*
+test/tests.js
+.DS_Store
+/node_modules

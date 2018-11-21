@@ -4,10 +4,10 @@
   "description": "Simple Parcel Sandbox",
   "main": "index.html",
   "scripts": {
-    "start": "parcel index.html --open",
-    "build": "parcel build index.html"
+    "start": "parcel ./src/index.js"
   },
   "dependencies": {
+    "fs": "0.0.1-security",
     "noop-loader": "1.0.0"
   },
   "devDependencies": {
