@@ -1,17 +1,15 @@
 {
 	"restartable": "rs",
+	"verbose": true,
+	"watch": [
+		"build/miniapp2vue.js"
+	],
 	"ignore": [
 		".git", ".svn", ".tmp", "dist", "node_modules/*/node_modules"
-	],
-	"verbose": true,
-	"execMap": {
-		"js": "node --harmony"
-	},
-	"watch": [
-		"src", "util", "lib"
 	],
 	"env": {
 		"NODE_ENV": "development"
 	},
-	"ext": "js json"
+	"ext": "js json",
+	"exec": "npm run clear:windows && node --harmony ./build/miniapp2vue.js"
 }

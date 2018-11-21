@@ -2,8 +2,8 @@
  * Check if val is a valid array index.
  */
 function isValidArrayIndex(val) {
-  var n = parseFloat(String(val));
-  return n >= 0 && Math.floor(n) === n && isFinite(val);
+    var n = parseFloat(String(val));
+    return n >= 0 && Math.floor(n) === n && isFinite(val);
 }
 
 // can we use __proto__?
@@ -13,32 +13,33 @@ var hasProto = "__proto__" in {};
  * Remove an item from an array
  */
 function remove(arr, item) {
-  if (arr.length) {
-    var index = arr.indexOf(item);
-    if (index > -1) {
-      return arr.splice(index, 1);
+    if (arr.length) {
+        var index = arr.indexOf(item);
+        if (index > -1) {
+            return arr.splice(index, 1);
+        }
     }
-  }
 }
 
 /**
  * Define a property.
  */
 function def(obj, key, val, enumerable) {
-  Object.defineProperty(obj, key, {
-    value: val,
-    enumerable: !!enumerable,
-    writable: true,
-    configurable: true
-  });
+    Object.defineProperty(obj, key, {
+        value: val,
+        enumerable: !!enumerable,
+        writable: true,
+        configurable: true
+    });
 }
 
 /**
  * Check whether the object has the property.
  */
 var hasOwnProperty = Object.prototype.hasOwnProperty;
+
 function hasOwn(obj, key) {
-  return hasOwnProperty.call(obj, key);
+    return hasOwnProperty.call(obj, key);
 }
 
 /**
@@ -47,7 +48,7 @@ function hasOwn(obj, key) {
  * is a JSON-compliant type.
  */
 function isObject(obj) {
-  return obj !== null && typeof obj === "object";
+    return obj !== null && typeof obj === "object";
 }
 
 /**
@@ -55,35 +56,37 @@ function isObject(obj) {
  * for plain JavaScript objects.
  */
 var _toString = Object.prototype.toString;
+
 function isPlainObject(obj) {
-  return _toString.call(obj) === "[object Object]";
+    return _toString.call(obj) === "[object Object]";
 }
 
 /**
  * Get the raw type string of a value e.g. [object Object]
  */
 var _toString = Object.prototype.toString;
+
 function toRawType(value) {
-  return _toString.call(value).slice(8, -1);
+    return _toString.call(value).slice(8, -1);
 }
 
 /**
  * Mix properties into target object.
  */
 function extend(to, _from) {
-  for (var key in _from) {
-    to[key] = _from[key];
-  }
-  return to;
+    for (var key in _from) {
+        to[key] = _from[key];
+    }
+    return to;
 }
 
 export {
-  def,
-  extend,
-  remove,
-  hasOwn,
-  hasProto,
-  isObject,
-  isPlainObject,
-  isValidArrayIndex
+    def,
+    extend,
+    remove,
+    hasOwn,
+    hasProto,
+    isObject,
+    isPlainObject,
+    isValidArrayIndex
 };

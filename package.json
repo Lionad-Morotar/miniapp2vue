@@ -4,10 +4,11 @@
   "description": "Simple Parcel Sandbox",
   "main": "index.html",
   "scripts": {
-    "start": "parcel ./src/index.js"
+    "start": "rollup -c -w && nodemon ./build/miniapp2vue.js",
+    "start-html": "parcel ./src/index.js",
+    "clear:windows": "cls"
   },
   "dependencies": {
-    "fs": "0.0.1-security",
     "noop-loader": "1.0.0"
   },
   "devDependencies": {

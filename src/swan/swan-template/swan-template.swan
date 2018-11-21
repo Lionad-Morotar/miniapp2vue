@@ -1,1 +1,10 @@
-https://uploads.codesandbox.io/uploads/user/fc197187-c485-4295-b5b9-47c639157217/WuBK-swan-template.swan
+<view class="page">
+    <view class="header">
+        <view s-if="checked">1</view>
+        <view s-else>2</view>
+    </view>
+
+    <view class="red-body" data-id="testid" click="testclick">
+        <view>{{msg}}</view>
+    </view>
+</view>
