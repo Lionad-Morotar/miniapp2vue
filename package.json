@@ -4,7 +4,8 @@
   "description": "Simple Parcel Sandbox",
   "main": "index.html",
   "scripts": {
-    "start": "rollup -c -w && nodemon ./build/miniapp2vue.js",
+    "start": "rollup -c -w",
+    "run": "nodemon ./build/miniapp2vue.js",
     "start-html": "parcel ./src/index.js",
     "clear:windows": "cls"
   },
