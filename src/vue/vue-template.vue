@@ -6,12 +6,12 @@
 <template>
 <div>
 
-    <!-- æ³¨éèç¹æµè¯ -->
+    <!-- 注释节点测试 -->
     <!--
         <p class="pcls" id='myp'>{{message}}</p>
     -->
 
-    <!-- æ®éèç¹æµè¯ -->
+    <!-- 普通节点测试 -->
     <p v-text="message"></p>
     <p v-bind:id="myid"></p>
     <aside v-bind:class="isActive"> aside </aside>
@@ -25,7 +25,7 @@
     <footer v-else-if="ok2"> footer </footer>
     <footer v-else> footer </footer>
 
-    <!-- æ¨¡æ¿èç¹æµè¯ -->
+    <!-- 模板节点测试 -->
     <template v-if="ok">
         <h1 v-if="ok2">ok</h1>
     </template>

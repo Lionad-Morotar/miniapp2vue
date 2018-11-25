@@ -1,4 +1,24 @@
 /**
+ * Make a map and return a function for checking if a key
+ * is in that map.
+ */
+function makeMap (
+    str,
+    splitChar,
+    expectsLowerCase,
+) {
+    var map = Object.create(null)
+    var list = str.split(splitChar || ',')
+    for (var i = 0; i < list.length; i++) {
+        let [key, val] = list[i].split(':')
+        map[key] = val || true
+    }
+    return expectsLowerCase
+        ? function (val) { return map[val.toLowerCase()] }
+        : function (val) { return map[val] }
+}
+
+/**
  * Check if val is a valid array index.
  */
 function isValidArrayIndex(val) {
@@ -82,6 +102,7 @@ function extend(to, _from) {
 
 export {
     def,
+    makeMap,
     extend,
     remove,
     hasOwn,
