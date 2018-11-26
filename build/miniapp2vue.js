@@ -638,6 +638,7 @@ let template = {
         }
 
         let compiledHTML = '';
+        // let stacks = 0 // 堆栈层数
         let options = {
             expectHTML: true,
             isUnaryTag: makeMap(''),
@@ -649,8 +650,11 @@ let template = {
                 compiledHTML += `<${name}`;
                 handleAttributes(attrs);
                 handleStarTagEnd(unary);
+                // stacks ++
             },
             end (tagName, start, end) {
+                // console.log(arguments)
+                // stacks --
                 let name = mapTagName(tagName);
                 compiledHTML += `</${name}>`;
             },
