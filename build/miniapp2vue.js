@@ -590,6 +590,10 @@ function parseHTML(html, options) {
 
 const fs = require('fs');
 
+var isBuiltInTag = makeMap('slot,component', true);
+
+var isReservedAttribute = makeMap('key,ref,slot,slot-scope,is');
+
 let template = {
     convert (paths) {
         return paths.map(path => {
