@@ -1,10 +1,12 @@
 'use strict';
 
+var no = function (a, b, c) { return false; };
+
 /**
  * Make a map and return a function for checking if a key
  * is in that map.
  */
-function makeMap (
+function makeMap$1 (
     str,
     splitChar,
     expectsLowerCase,
@@ -20,10 +22,22 @@ function makeMap (
         : function (val) { return map[val] }
 }
 
+/** 将对象属性(name, value)转化为哈希(name: value)
+ * 
+ * @param { Array } attrs 
+ */
+function makeAttrsMap(attrs) {
+    var map = {};
+    for (var i = 0, l = attrs.length; i < l; i++) {
+        map[attrs[i].name] = attrs[i].value;
+    }
+    return map
+}
+
 /**
  * Mix properties into target object.
  */
-function extend(to, _from) {
+function extend$1(to, _from) {
     for (var key in _from) {
         to[key] = _from[key];
     }
@@ -79,7 +93,7 @@ function extract(folders, config) {
  */
 
 // 一维的不可嵌套的标签
-var isUnaryTag = makeMap(
+var isUnaryTag = makeMap$1(
     'area,base,br,col,embed,frame,hr,img,input,isindex,keygen,' +
     'link,meta,param,source,track,wbr'
 );
@@ -87,7 +101,7 @@ var isUnaryTag = makeMap(
 // Elements that you can, intentionally, leave open
 // (and which close themselves)
 // 可以显式自关闭的标签
-var canBeLeftOpenTag = makeMap(
+var canBeLeftOpenTag = makeMap$1(
     'colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr,source'
 );
 
@@ -97,7 +111,7 @@ var canBeLeftOpenTag = makeMap(
 // @see https://html.spec.whatwg.org/multipage/dom.html#phrasing-content
 // (包含)短语内容的节点
 // 意味着这些节点中可能存在 文本内容 等不需要进行解析的 HTML 内容
-var isNonPhrasingTag = makeMap(
+var isNonPhrasingTag = makeMap$1(
     'address,article,aside,base,blockquote,body,caption,col,colgroup,dd,' +
     'details,dialog,div,dl,dt,fieldset,figcaption,figure,footer,form,' +
     'h1,h2,h3,h4,h5,h6,head,header,hgroup,hr,html,legend,li,menuitem,meta,' +
@@ -107,10 +121,10 @@ var isNonPhrasingTag = makeMap(
 
 // Special Elements (can contain anything)
 // 可以包含任何内容的节点(不被htmlParser继续遍历解析)
-var isPlainTextElement = makeMap('script,style,textarea', true);
+var isPlainTextElement = makeMap$1('script,style,textarea', true);
 
 // 可以包含'\n'的节点
-var isIgnoreNewlineTag = makeMap('pre,textarea', true);
+var isIgnoreNewlineTag = makeMap$1('pre,textarea', true);
 // #5992
 var shouldIgnoreFirstNewline = function (tag, html) { 
     return tag && isIgnoreNewlineTag(tag) && html[0] === '\n'
@@ -588,92 +602,325 @@ function parseHTML(html, options) {
     }
 }
 
-const fs = require('fs');
+/**
+ * @file origin from VueJS
+ */
 
-var isBuiltInTag = makeMap('slot,component', true);
+function createCompilerCreator(baseCompile) {
+    return function createCompiler(baseOptions) {
+        function compile(
+            template,
+            options
+        ) {
+            var finalOptions = Object.create(baseOptions);
+            var errors = [];
+            var tips = [];
 
-var isReservedAttribute = makeMap('key,ref,slot,slot-scope,is');
-
-let template = {
-    convert (paths) {
-        return paths.map(path => {
-            let content = fs.readFileSync(path, 'utf8');
-            let compiled = template.compile(content);
-            if (compiled.errors.length) {
-                throw new Error(compiled.errors[0])
-            }
-            return template.compileAST(compiled.ast)
-        })
-    },
-    compile (content) {
-
-        function mapTagName (tagName) {
-            let reflexTagName = null;
-            // switch or map ...
-            switch (tagName) {
-                case 'view':
-                    reflexTagName = 'div';
-                break
-                default:
-                    reflexTagName = tagName;
-                break
-            }
-            return reflexTagName
-        }
-        function handleAttributes (attrs) {
-            let attrNameMap = makeMap(
-                ['s-if:v-if','s-else:v-else'].join(',')
-            );
-            attrs.map(attr => {
-
-                /** handle name */
-                let reflexAttrName = attrNameMap(attr.name) || attr.name;
-                compiledHTML += ` ${reflexAttrName}`;
-
-                /** handle value */
-                if (attr.value) {
-                    let realVal = attr.value;
-                    compiledHTML += `="${realVal}"`;
+            if (options) {
+                // copy other options
+                for (var key in options) {
+                    if (key !== 'modules' && key !== 'directives') {
+                        finalOptions[key] = options[key];
+                    }
                 }
+            }
+
+            var compiled = baseCompile(template, finalOptions);
+
+            compiled.errors = errors;
+            compiled.tips = tips;
+
+            return compiled
+        }
+
+        return {
+            compile: compile,
+            // compileToFunctions: createCompileToFunctionFn(compile)
+        }
+    }
+}
+
+function createASTElement(tag, attrs, parent) {
+    return {
+        type: 1,
+        tag: tag,
+        attrsList: attrs,
+        attrsMap: makeAttrsMap(attrs),
+        parent: parent,
+        children: []
+    }
+}
+
+function parse (template, options) {
+
+    var stack = [];
+    var root;
+    var currentParent;
+    var inPre = false;
+
+    var preserveWhitespace = options.preserveWhitespace !== false;
+    var platformIsPreTag = options.isPreTag || no;
+
+
+    function closeElement(element) {
+        // check pre state
+        if (element.pre) {
+            inVPre = false;
+        }
+        if (platformIsPreTag(element.tag)) {
+            inPre = false;
+        }
+    }
+
+    parseHTML(template, {
+        expectHTML: options.expectHTML,
+        isUnaryTag: options.isUnaryTag,
+        canBeLeftOpenTag: options.canBeLeftOpenTag,
+        shouldDecodeNewlines: options.shouldDecodeNewlines,
+        shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
+        shouldKeepComment: options.comments,
+        start: function start(tag, attrs, unary) {
+            
+            var ns = (currentParent && currentParent.ns) || options.getTagNamespace(tag);
+
+            var element = createASTElement(tag, attrs, currentParent);
+
+            if (ns) {
+                element.ns = ns;
+            }
+
+            if (platformIsPreTag(element.tag)) {
+                inPre = true;
+            }
+
+            function checkRootConstraints(el) {
+                if (process.env.NODE_ENV !== 'production') {
+                    if (el.tag === 'slot' || el.tag === 'template') {
+                        warnOnce(
+                            "Cannot use <" + (el.tag) + "> as component root element because it may " +
+                            'contain multiple nodes.'
+                        );
+                    }
+                    if (el.attrsMap.hasOwnProperty('v-for')) {
+                        warnOnce(
+                            'Cannot use v-for on stateful component root element because ' +
+                            'it renders multiple elements.'
+                        );
+                    }
+                }
+            }
+
+            // tree management
+            if (!root) {
+                root = element;
+                checkRootConstraints(root);
+            } else if (!stack.length) {
+                // allow root elements with v-if, v-else-if and v-else
+                if (root.if && (element.elseif || element.else)) {
+                    checkRootConstraints(element);
+                    addIfCondition(root, {
+                        exp: element.elseif,
+                        block: element
+                    });
+                } else if (process.env.NODE_ENV !== 'production') {
+                    warnOnce(
+                        "Component template should contain exactly one root element. " +
+                        "If you are using v-if on multiple elements, " +
+                        "use v-else-if to chain them instead."
+                    );
+                }
+            }
+            if (currentParent && !element.forbidden) {
+                if (element.elseif || element.else) {
+                    processIfConditions(element, currentParent);
+                } else if (element.slotScope) { // scoped slot
+                    currentParent.plain = false;
+                    var name = element.slotTarget || '"default"';
+                    (currentParent.scopedSlots || (currentParent.scopedSlots = {}))[name] = element;
+                } else {
+                    currentParent.children.push(element);
+                    element.parent = currentParent;
+                }
+            }
+            if (!unary) {
+                currentParent = element;
+                stack.push(element);
+            } else {
+                closeElement(element);
+            }
+        },
+
+        end: function end() {
+            // remove trailing whitespace
+            var element = stack[stack.length - 1];
+            var lastNode = element.children[element.children.length - 1];
+            if (lastNode && lastNode.type === 3 && lastNode.text === ' ' && !inPre) {
+                element.children.pop();
+            }
+            // pop stack
+            stack.length -= 1;
+            currentParent = stack[stack.length - 1];
+            closeElement(element);
+        },
+
+        chars: function chars(text) {
+            currentParent.children.push({
+                type: 2,
+                text: text
+            });
+        },
+        comment: function comment(text) {
+            currentParent.children.push({
+                type: 3,
+                text: text,
+                isComment: true
             });
         }
-        function handleStarTagEnd (unary) {
-            compiledHTML += unary ? '/>' : '>';
+    });
+    return root
+}
+
+var createCompiler = createCompilerCreator(function baseCompile(
+    template,
+    options
+) {
+    var ast = parse(template.trim(), options);
+
+    return ast
+});
+
+// Browser environment sniffing
+var inBrowser$1 = typeof window !== 'undefined';
+var inWeex = typeof WXEnvironment !== 'undefined' && !!WXEnvironment.platform;
+var weexPlatform = inWeex && WXEnvironment.platform.toLowerCase();
+var UA = inBrowser$1 && window.navigator.userAgent.toLowerCase();
+var isIE = UA && /msie|trident/.test(UA);
+var isIE9 = UA && UA.indexOf('msie 9.0') > 0;
+var isEdge = UA && UA.indexOf('edge/') > 0;
+var isAndroid = (UA && UA.indexOf('android') > 0) || (weexPlatform === 'android');
+var isIOS = (UA && /iphone|ipad|ipod|ios/.test(UA)) || (weexPlatform === 'ios');
+var isChrome = UA && /chrome\/\d+/.test(UA) && !isEdge;
+
+
+function getTagNamespace (tag) {
+    if (isSVG(tag)) {
+        return 'svg'
+    }
+    if (tag === 'math') {
+        return 'math'
+    }
+}
+
+var isPreTag = function (tag) { return tag === 'pre' };
+
+var isUnaryTag$1 = makeMap$1(
+    'area,base,br,col,embed,frame,hr,img,input,isindex,keygen,' +
+    'link,meta,param,source,track,wbr'
+);
+
+var canBeLeftOpenTag$1 = makeMap$1(
+    'colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr,source'
+);
+
+var isHTMLTag = makeMap$1(
+    'html,body,base,head,link,meta,style,title,' +
+    'address,article,aside,footer,header,h1,h2,h3,h4,h5,h6,hgroup,nav,section,' +
+    'div,dd,dl,dt,figcaption,figure,picture,hr,img,li,main,ol,p,pre,ul,' +
+    'a,b,abbr,bdi,bdo,br,cite,code,data,dfn,em,i,kbd,mark,q,rp,rt,rtc,ruby,' +
+    's,samp,small,span,strong,sub,sup,time,u,var,wbr,area,audio,map,track,video,' +
+    'embed,object,param,source,canvas,script,noscript,del,ins,' +
+    'caption,col,colgroup,table,thead,tbody,td,th,tr,' +
+    'button,datalist,fieldset,form,input,label,legend,meter,optgroup,option,' +
+    'output,progress,select,textarea,' +
+    'details,dialog,menu,menuitem,summary,' +
+    'content,element,shadow,template,blockquote,iframe,tfoot'
+);
+var isSVG = makeMap$1(
+    'svg,animate,circle,clippath,cursor,defs,desc,ellipse,filter,font-face,' +
+    'foreignObject,g,glyph,image,line,marker,mask,missing-glyph,path,pattern,' +
+    'polygon,polyline,rect,switch,symbol,text,textpath,tspan,use,view',
+    true
+);
+var isReservedTag = function (tag) {
+    return isHTMLTag(tag) || isSVG(tag)
+};
+
+const baseCompileOptions = {
+    expectHTML: true,
+    // modules: modules,
+    // directives: directives,
+    isPreTag: isPreTag,
+    isUnaryTag: isUnaryTag$1,
+    // mustUseProp: mustUseProp,
+    canBeLeftOpenTag: canBeLeftOpenTag$1,
+    isReservedTag: isReservedTag,
+    getTagNamespace: getTagNamespace,
+    // staticKeys: genStaticKeys(modules),
+};
+
+function handleAttributes (attrs) {
+    let attrNameMap = makeMap(
+        ['s-if:v-if','s-else:v-else'].join(',')
+    );
+    attrs.map(attr => {
+
+        /** handle name */
+        let reflexAttrName = attrNameMap(attr.name) || attr.name;
+
+        /** handle value */
+        if (attr.value) {
+            let realVal = attr.value;
         }
+    });
+}
 
-        let compiledHTML = '';
-        // let stacks = 0 // 堆栈层数
-        let options = {
-            expectHTML: true,
-            isUnaryTag: makeMap(''),
-            canBeLeftOpenTag: makeMap(''),
-            start (tagName, attrs, unary, start, end) {
-                // console.log(arguments)
-                let name = mapTagName(tagName);
-                // let index = createBlink()
-                compiledHTML += `<${name}`;
-                handleAttributes(attrs);
-                handleStarTagEnd(unary);
-                // stacks ++
-            },
-            end (tagName, start, end) {
-                // console.log(arguments)
-                // stacks --
-                let name = mapTagName(tagName);
-                compiledHTML += `</${name}>`;
-            },
-            chars (content) {
-                compiledHTML += content;
-            }
-        };
+const swan2vueOptions = {
+    expectHTML: baseCompileOptions.expectHTML,
+    isUnaryTag: baseCompileOptions.isUnaryTag,
+    canBeLeftOpenTag: baseCompileOptions.canBeLeftOpenTag,
+    shouldDecodeNewlines: baseCompileOptions.shouldDecodeNewlines,
+    shouldDecodeNewlinesForHref: baseCompileOptions.shouldDecodeNewlinesForHref,
+    shouldKeepComment: baseCompileOptions.comments,
+    getTagNamespace: baseCompileOptions.getTagNamespace,
+    start (tagName, attrs, unary, start, end) {
+        handleAttributes(attrs);
+        // stacks ++
+    },
+    end (tagName, start, end) {
+    },
+    chars (content) {
+    }
+};
 
-        console.log(content);
-        parseHTML(content, options);
-        console.log(compiledHTML);
+const fs = require('fs');
+const config = {
+    swan2vueOptions,
+};
+
+// const isBuiltInTag = makeMap('slot,component')
+// const isReservedAttribute = makeMap('key,ref,slot,slot-scope,is')
+
+let template = {
+    convert (paths, rawConfig) {
+        return paths.map(path => {
+            let content = fs.readFileSync(path, 'utf8');
+            let compiled = template.compile(content, rawConfig);
+            // if (compiled.errors.length) {
+            //     throw new Error(compiled.errors[0])
+            // }
+            // return template.compileAST(compiled.ast)
+            return compiled
+        })
+    },
+    compile (content, rawConfig) {
+
+        let compileOptions = config[`${rawConfig.plat}2vueOptions`];
+        let compile = createCompiler(compileOptions).compile;
+        let ast = compile(content, compileOptions);
 
         return {
             errors: [],
-            ast: []
+            ast: ast,
         }
     },
     compileAST () {
@@ -681,17 +928,9 @@ let template = {
     }
 };
 
-var template$1 = {
-    convert: template.convert,
-};
-
-var swan2vue = {
-    template: template$1
-};
-
-const COMPILER = {
-    swan2vue,
+const fileHandle = {
     extract,
+    template
 };
 
 /** Compiler
@@ -704,26 +943,21 @@ function convert(folder, config) {
 
     /** var starndards */
 
-    let folders = folder instanceof Array ? folder : [folder];
-    config = extend(
-        {
-            type: "all"
-        },
-        config
-    );
+    config = extend$1({ type: "all" }, config);
 
+    let folders = folder instanceof Array ? folder : [folder];
     let res = [];
 
     /** logic */
 
-    let compilerName = `${config.plat}2vue`,
-        compilerHandle = config.type;
-    let handle = COMPILER.extract(folders, config);
-    handle.forEach(item => {
-        res.push(
-            COMPILER[compilerName][compilerHandle].convert(item)
-        );
-    });
+    // let compilerName = `${config.plat}2vue`,
+    let compilerHandle = config.type;
+    let handle = fileHandle.extract(folders, config);
+        handle.forEach(item => {
+            res.push(
+                fileHandle[compilerHandle].convert(item, config)
+            );
+        });
 
     /** return val */
 
@@ -739,9 +973,7 @@ const path = require('path');
 var unsolvedFolder = path.resolve(__dirname, '../src/swan/swan-template');
 // console.log(unsolvedFolder)
 
-var vuetpl = Compiler.convert(unsolvedFolder, {
+Compiler.convert(unsolvedFolder, {
     plat: 'swan',
     type: 'template',
 });
-
-console.log('RESULT:', vuetpl);

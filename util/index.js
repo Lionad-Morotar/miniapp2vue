@@ -1,3 +1,5 @@
+var no = function (a, b, c) { return false; }
+
 /**
  * Make a map and return a function for checking if a key
  * is in that map.
@@ -16,6 +18,18 @@ function makeMap (
     return expectsLowerCase
         ? function (val) { return map[val.toLowerCase()] }
         : function (val) { return map[val] }
+}
+
+/** 将对象属性(name, value)转化为哈希(name: value)
+ * 
+ * @param { Array } attrs 
+ */
+function makeAttrsMap(attrs) {
+    var map = {};
+    for (var i = 0, l = attrs.length; i < l; i++) {
+        map[attrs[i].name] = attrs[i].value;
+    }
+    return map
 }
 
 /**
@@ -100,9 +114,23 @@ function extend(to, _from) {
     return to;
 }
 
+/**
+ * Create a cached version of a pure function.
+ */
+function cached (fn) {
+    var cache = Object.create(null);
+    return (function cachedFn (str) {
+        var hit = cache[str];
+        return hit || (cache[str] = fn(str))
+    })
+}
+
 export {
+    no,
     def,
+    cached,
     makeMap,
+    makeAttrsMap,
     extend,
     remove,
     hasOwn,
