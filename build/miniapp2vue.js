@@ -6,7 +6,7 @@ var no = function (a, b, c) { return false; };
  * Make a map and return a function for checking if a key
  * is in that map.
  */
-function makeMap$1 (
+function makeMap (
     str,
     splitChar,
     expectsLowerCase,
@@ -93,7 +93,7 @@ function extract(folders, config) {
  */
 
 // 一维的不可嵌套的标签
-var isUnaryTag = makeMap$1(
+var isUnaryTag = makeMap(
     'area,base,br,col,embed,frame,hr,img,input,isindex,keygen,' +
     'link,meta,param,source,track,wbr'
 );
@@ -101,7 +101,7 @@ var isUnaryTag = makeMap$1(
 // Elements that you can, intentionally, leave open
 // (and which close themselves)
 // 可以显式自关闭的标签
-var canBeLeftOpenTag = makeMap$1(
+var canBeLeftOpenTag = makeMap(
     'colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr,source'
 );
 
@@ -111,7 +111,7 @@ var canBeLeftOpenTag = makeMap$1(
 // @see https://html.spec.whatwg.org/multipage/dom.html#phrasing-content
 // (包含)短语内容的节点
 // 意味着这些节点中可能存在 文本内容 等不需要进行解析的 HTML 内容
-var isNonPhrasingTag = makeMap$1(
+var isNonPhrasingTag = makeMap(
     'address,article,aside,base,blockquote,body,caption,col,colgroup,dd,' +
     'details,dialog,div,dl,dt,fieldset,figcaption,figure,footer,form,' +
     'h1,h2,h3,h4,h5,h6,head,header,hgroup,hr,html,legend,li,menuitem,meta,' +
@@ -121,10 +121,10 @@ var isNonPhrasingTag = makeMap$1(
 
 // Special Elements (can contain anything)
 // 可以包含任何内容的节点(不被htmlParser继续遍历解析)
-var isPlainTextElement = makeMap$1('script,style,textarea', true);
+var isPlainTextElement = makeMap('script,style,textarea', true);
 
 // 可以包含'\n'的节点
-var isIgnoreNewlineTag = makeMap$1('pre,textarea', true);
+var isIgnoreNewlineTag = makeMap('pre,textarea', true);
 // #5992
 var shouldIgnoreFirstNewline = function (tag, html) { 
     return tag && isIgnoreNewlineTag(tag) && html[0] === '\n'
@@ -789,16 +789,16 @@ function getTagNamespace (tag) {
 
 var isPreTag = function (tag) { return tag === 'pre' };
 
-var isUnaryTag$1 = makeMap$1(
+var isUnaryTag$1 = makeMap(
     'area,base,br,col,embed,frame,hr,img,input,isindex,keygen,' +
     'link,meta,param,source,track,wbr'
 );
 
-var canBeLeftOpenTag$1 = makeMap$1(
+var canBeLeftOpenTag$1 = makeMap(
     'colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr,source'
 );
 
-var isHTMLTag = makeMap$1(
+var isHTMLTag = makeMap(
     'html,body,base,head,link,meta,style,title,' +
     'address,article,aside,footer,header,h1,h2,h3,h4,h5,h6,hgroup,nav,section,' +
     'div,dd,dl,dt,figcaption,figure,picture,hr,img,li,main,ol,p,pre,ul,' +
@@ -811,7 +811,7 @@ var isHTMLTag = makeMap$1(
     'details,dialog,menu,menuitem,summary,' +
     'content,element,shadow,template,blockquote,iframe,tfoot'
 );
-var isSVG = makeMap$1(
+var isSVG = makeMap(
     'svg,animate,circle,clippath,cursor,defs,desc,ellipse,filter,font-face,' +
     'foreignObject,g,glyph,image,line,marker,mask,missing-glyph,path,pattern,' +
     'polygon,polyline,rect,switch,symbol,text,textpath,tspan,use,view',
@@ -835,6 +835,35 @@ const baseCompileOptions = {
     // staticKeys: genStaticKeys(modules),
 };
 
+const tagConvertMap = {
+    'view': 'div',
+    'block': 'template',
+    'scroll-view': 'div',
+    'swiper': 'swiper',
+    'icon': 'i',
+    'text': 'span',
+    'rich-text': 'iframe-indoc',
+    'progress': 'progress',
+    'button': 'button',
+    'checkbox': 'checkbox',
+    'checkbox-group': 'checkbox-group',
+    'form': 'form',
+    'input': 'input',
+    'label': 'label',
+    'picker': 'picker',
+    'radio': 'radio',
+    'switch': 'switch',
+    'textarea': 'textarea',
+    'audio': 'audio',
+    'image': 'img',
+    'video': 'video',
+    'canvas': 'canvas',
+    'wev-view': 'iframe-src',
+};
+const isWhiteTag = (tagName) => {
+    return tagConvertMap[tagName]
+};
+
 const compileOptions = {
     expectHTML: baseCompileOptions.expectHTML,
     isUnaryTag: baseCompileOptions.isUnaryTag,
@@ -852,88 +881,106 @@ function compileASTToTemplate (ast) {
 
     process(ast);
 
-    function process(item) {
-        let children = item.children;
-        createTag(item);
+    console.log(tpl);
+
+    /**
+     * 處理Tag轉換
+     */
+    function handleTagConvert (node) {
+        if (isWhiteTag(node.tag)) {
+            node.tag = tagConvertMap[node.tag];
+        }
+        // console.log(tpl)
+    }
+
+    /**
+     * 处理属性
+     */
+    function handleAttributes (node) {
+        let attrNameMap = makeMap(
+            [
+                's-if:v-if',
+                's-else:v-else'
+            
+            ].join(',')
+        );
+        node.attrsList.map(attr => {
+    
+            /** handle name */
+            let reflexAttrName = attrNameMap(attr.name) || attr.name;
+            tpl += ` ${reflexAttrName}`;
+    
+            /** handle value */
+            if (attr.value) {
+                let realVal = attr.value;
+                tpl += `="${realVal}"`;
+            }
+        });
+        // console.log(tpl)
+    }
+
+    /**
+     * 根据是否是自闭合标签结束开始标签
+     */
+    function handleStarTagEnd (node) {
+        tpl += node.unary ? '/>' : '>'
+        ;!node.unary && stack.push({
+            tag: node.tag
+        });
+    }
+
+    /** MAIN
+     *  处理stack
+     */
+    function process(node) {
+        let children = node.children;
+
+        createTag(node);
         if (children && children.length) {
             processChild(children);
         }
-        if (item.type === 1) {
-            closeTag(item);
+        if (node.type === 1) {
+            handleTagEnd();
         }
     }
 
+    /**
+     * 简写
+     */
     function processChild(children) {
-        children.map(item => process(item));
+        children.map(childNode => process(childNode));
     }
 
-    function createTag(item) {
-        switch (item.type) {
+    /**
+     * 处理单个节点
+     */
+    function createTag(node) {
+        switch (node.type) {
             case 1:
-                {
-                    if (isWhiteTag(item.tag)) { //非自定义标签，可以标准转换的tag list
-                        item.tag = convertTag(item.tag);
-                    } else {
-                        throw new Error(`${item.tag} can\'t convert,wx is not support!`);
-                    }
-                    var insertContent = '';
-                    tpl += `<${item.tag}`;
-                    //处理attr
-                    for (var key in item.attrsMap) {
-                        var attrObjs = getRealAttr(key);
-                        var cAttr = attrsConvertMap[attrObjs.type];
-                        if (cAttr) {
-                            var resObj = cAttr(key, item.attrsMap[key], attrObjs);
-                            insertContent = resObj.insertContent || '';
-                            tpl += resObj.tpl || '';
-                        } else {
-                            tpl += ` ${key}="${item.attrsMap[key]}" `;
-                        }
-                    }
-                    if (isNotClosedTag(item.tag)) {
-                        tpl += ` />`;
-                    } else {
-                        tpl += `>`;
-                        //处理v-text,v-html,把插入标签的内容注入
-                        tpl += insertContent;
-                        stack.push({
-                            tag: item.tag
-                        });
-                    }
-                    break;
-                }
+                handleTagConvert(node);
+                tpl += `<${node.tag}`;
+                handleAttributes(node);
+                handleStarTagEnd(node);
+            break
+            case 2:
+
             case 3:
                 //文本和注释
-                if (item.isComment) {
-                    tpl += `<!-- ${item.text} -->`;
+                if (node.isComment) {
+                    tpl += `<!-- ${node.text} -->`;
                 } else {
-                    tpl += item.text;
+                    tpl += node.text;
                 }
-                break;
+            break
         }
-
         return tpl
     }
 
-    function closeTag(item) {
-        let tagName = item.tag;
-        var pos;
-        
-        if (tagName) {
-            //从栈内找到闭合标签
-            for (pos = stack.length - 1; pos >= 0; pos--) {
-                if (stack[pos].tag === tagName) {
-                    tpl += `</${tagName}>`;
-                    break
-                }
-            }
-        } else {
-            pos = 0;
-        }
-        if (pos >= 0) {
-            //说明有标签没有闭合,丢弃	
-            stack.length = pos;
-        }
+    /**
+     * 根据stack关闭标签
+     */
+    function handleTagEnd () {
+        tpl += `</${stack.pop().tag}>`;
     }
 }
 
@@ -964,7 +1011,7 @@ let template = {
             if (compiled.errors.length) {
                 throw new Error(compiled.errors[0])
             }
-            return template.compileAST(compiled.ast)
+            return template.compileAST(compiled.ast, rawConfig)
         })
     },
     compile (content, rawConfig) {
@@ -980,7 +1027,7 @@ let template = {
             ast,
         }
     },
-    compileAST (ast) {
+    compileAST (ast, rawConfig) {
         let astHandle = config[`${rawConfig.plat}2vueOptions`].compileASTHandle;
         let tpl = astHandle.compile(ast);
 
