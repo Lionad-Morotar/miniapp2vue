@@ -678,8 +678,8 @@ function parse (template, options) {
         canBeLeftOpenTag: options.canBeLeftOpenTag,
         shouldDecodeNewlines: options.shouldDecodeNewlines,
         shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
-        shouldKeepComment: options.comments,
-        start: function start(tag, attrs, unary) {
+        shouldKeepComment: options.shouldKeepComment || true,
+        start: options.start || function start(tag, attrs, unary) {
             
             var ns = (currentParent && currentParent.ns) || options.getTagNamespace(tag);
 
@@ -693,41 +693,16 @@ function parse (template, options) {
                 inPre = true;
             }
 
-            function checkRootConstraints(el) {
-                if (process.env.NODE_ENV !== 'production') {
-                    if (el.tag === 'slot' || el.tag === 'template') {
-                        warnOnce(
-                            "Cannot use <" + (el.tag) + "> as component root element because it may " +
-                            'contain multiple nodes.'
-                        );
-                    }
-                    if (el.attrsMap.hasOwnProperty('v-for')) {
-                        warnOnce(
-                            'Cannot use v-for on stateful component root element because ' +
-                            'it renders multiple elements.'
-                        );
-                    }
-                }
-            }
-
             // tree management
             if (!root) {
                 root = element;
-                checkRootConstraints(root);
             } else if (!stack.length) {
                 // allow root elements with v-if, v-else-if and v-else
                 if (root.if && (element.elseif || element.else)) {
-                    checkRootConstraints(element);
                     addIfCondition(root, {
                         exp: element.elseif,
                         block: element
                     });
-                } else if (process.env.NODE_ENV !== 'production') {
-                    warnOnce(
-                        "Component template should contain exactly one root element. " +
-                        "If you are using v-if on multiple elements, " +
-                        "use v-else-if to chain them instead."
-                    );
                 }
             }
             if (currentParent && !element.forbidden) {
@@ -750,7 +725,7 @@ function parse (template, options) {
             }
         },
 
-        end: function end() {
+        end: options.end || function end() {
             // remove trailing whitespace
             var element = stack[stack.length - 1];
             var lastNode = element.children[element.children.length - 1];
@@ -763,13 +738,13 @@ function parse (template, options) {
             closeElement(element);
         },
 
-        chars: function chars(text) {
+        chars: options.chars || function chars(text) {
             currentParent.children.push({
                 type: 2,
                 text: text
             });
         },
-        comment: function comment(text) {
+        comment: options.comment || function comment(text) {
             currentParent.children.push({
                 type: 3,
                 text: text,
@@ -777,6 +752,7 @@ function parse (template, options) {
             });
         }
     });
+
     return root
 }
 
@@ -855,26 +831,11 @@ const baseCompileOptions = {
     canBeLeftOpenTag: canBeLeftOpenTag$1,
     isReservedTag: isReservedTag,
     getTagNamespace: getTagNamespace,
+    shouldKeepComment: true,
     // staticKeys: genStaticKeys(modules),
 };
 
-function handleAttributes (attrs) {
-    let attrNameMap = makeMap(
-        ['s-if:v-if','s-else:v-else'].join(',')
-    );
-    attrs.map(attr => {
-
-        /** handle name */
-        let reflexAttrName = attrNameMap(attr.name) || attr.name;
-
-        /** handle value */
-        if (attr.value) {
-            let realVal = attr.value;
-        }
-    });
-}
-
-const swan2vueOptions = {
+const compileOptions = {
     expectHTML: baseCompileOptions.expectHTML,
     isUnaryTag: baseCompileOptions.isUnaryTag,
     canBeLeftOpenTag: baseCompileOptions.canBeLeftOpenTag,
@@ -882,17 +843,112 @@ const swan2vueOptions = {
     shouldDecodeNewlinesForHref: baseCompileOptions.shouldDecodeNewlinesForHref,
     shouldKeepComment: baseCompileOptions.comments,
     getTagNamespace: baseCompileOptions.getTagNamespace,
-    start (tagName, attrs, unary, start, end) {
-        handleAttributes(attrs);
-        // stacks ++
-    },
-    end (tagName, start, end) {
-    },
-    chars (content) {
+};
+
+function compileASTToTemplate (ast) {
+
+    let stack = [];
+    let tpl = '';
+
+    process(ast);
+
+    function process(item) {
+        let children = item.children;
+        createTag(item);
+        if (children && children.length) {
+            processChild(children);
+        }
+        if (item.type === 1) {
+            closeTag(item);
+        }
     }
+
+    function processChild(children) {
+        children.map(item => process(item));
+    }
+
+    function createTag(item) {
+        switch (item.type) {
+            case 1:
+                {
+                    if (isWhiteTag(item.tag)) { //非自定义标签，可以标准转换的tag list
+                        item.tag = convertTag(item.tag);
+                    } else {
+                        throw new Error(`${item.tag} can\'t convert,wx is not support!`);
+                    }
+                    var insertContent = '';
+                    tpl += `<${item.tag}`;
+                    //处理attr
+                    for (var key in item.attrsMap) {
+                        var attrObjs = getRealAttr(key);
+                        var cAttr = attrsConvertMap[attrObjs.type];
+                        if (cAttr) {
+                            var resObj = cAttr(key, item.attrsMap[key], attrObjs);
+                            insertContent = resObj.insertContent || '';
+                            tpl += resObj.tpl || '';
+                        } else {
+                            tpl += ` ${key}="${item.attrsMap[key]}" `;
+                        }
+                    }
+                    if (isNotClosedTag(item.tag)) {
+                        tpl += ` />`;
+                    } else {
+                        tpl += `>`;
+                        //处理v-text,v-html,把插入标签的内容注入
+                        tpl += insertContent;
+                        stack.push({
+                            tag: item.tag
+                        });
+                    }
+                    break;
+                }
+            case 3:
+                //文本和注释
+                if (item.isComment) {
+                    tpl += `<!-- ${item.text} -->`;
+                } else {
+                    tpl += item.text;
+                }
+                break;
+        }
+
+        return tpl
+    }
+
+    function closeTag(item) {
+        let tagName = item.tag;
+        var pos;
+        
+        if (tagName) {
+            //从栈内找到闭合标签
+            for (pos = stack.length - 1; pos >= 0; pos--) {
+                if (stack[pos].tag === tagName) {
+                    tpl += `</${tagName}>`;
+                    break
+                }
+            }
+        } else {
+            pos = 0;
+        }
+        if (pos >= 0) {
+            //说明有标签没有闭合,丢弃	
+            stack.length = pos;
+        }
+    }
+}
+
+var swan2vueOptions = {
+
+    compileOptions,
+
+    compileASTHandle: {
+        compile: compileASTToTemplate
+    }
+    
 };
 
 const fs = require('fs');
+
 const config = {
     swan2vueOptions,
 };
@@ -905,27 +961,33 @@ let template = {
         return paths.map(path => {
             let content = fs.readFileSync(path, 'utf8');
             let compiled = template.compile(content, rawConfig);
-            // if (compiled.errors.length) {
-            //     throw new Error(compiled.errors[0])
-            // }
-            // return template.compileAST(compiled.ast)
-            return compiled
+            if (compiled.errors.length) {
+                throw new Error(compiled.errors[0])
+            }
+            return template.compileAST(compiled.ast)
         })
     },
     compile (content, rawConfig) {
 
-        let compileOptions = config[`${rawConfig.plat}2vueOptions`];
+        let compileOptions = config[`${rawConfig.plat}2vueOptions`].compileOptions;
         let compile = createCompiler(compileOptions).compile;
         let ast = compile(content, compileOptions);
 
+        console.log(ast);
+
         return {
             errors: [],
-            ast: ast,
+            ast,
         }
     },
-    compileAST () {
-        return []
-    }
+    compileAST (ast) {
+        let astHandle = config[`${rawConfig.plat}2vueOptions`].compileASTHandle;
+        let tpl = astHandle.compile(ast);
+
+        console.log(tpl);
+
+        return tpl
+    },
 };
 
 const fileHandle = {

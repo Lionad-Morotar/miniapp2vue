@@ -1,4 +1,5 @@
 <view class="page">
+    <!-- header -->
     <view class="header">
         <view s-if="checked">1</view>
         <view s-else>2</view>
