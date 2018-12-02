@@ -881,7 +881,7 @@ function compileASTToTemplate (ast) {
 
     process(ast);
 
-    console.log(tpl);
+    // console.log(tpl)
 
     return tpl
 
@@ -957,7 +957,7 @@ function compileASTToTemplate (ast) {
      * 处理单个节点
      */
     function createTag(node) {
-        console.log(node.tag);
+        // console.log(node.tag)
         switch (node.type) {
             case 1:
                 handleTagConvert(node);
