@@ -858,7 +858,7 @@ const tagConvertMap = {
     'image': 'img',
     'video': 'video',
     'canvas': 'canvas',
-    'wev-view': 'iframe-src',
+    'web-view': 'iframe',
 };
 const isWhiteTag = (tagName) => {
     return tagConvertMap[tagName]
@@ -882,6 +882,8 @@ function compileASTToTemplate (ast) {
     process(ast);
 
     console.log(tpl);
+
+    return tpl
 
     /**
      * 處理Tag轉換
@@ -955,6 +957,7 @@ function compileASTToTemplate (ast) {
      * 处理单个节点
      */
     function createTag(node) {
+        console.log(node.tag);
         switch (node.type) {
             case 1:
                 handleTagConvert(node);
@@ -973,7 +976,6 @@ function compileASTToTemplate (ast) {
                 }
             break
         }
-        return tpl
     }
 
     /**
@@ -995,6 +997,7 @@ var swan2vueOptions = {
 };
 
 const fs = require('fs');
+const path = require('path');
 
 const config = {
     swan2vueOptions,
@@ -1008,10 +1011,12 @@ let template = {
         return paths.map(path => {
             let content = fs.readFileSync(path, 'utf8');
             let compiled = template.compile(content, rawConfig);
-            if (compiled.errors.length) {
-                throw new Error(compiled.errors[0])
-            }
-            return template.compileAST(compiled.ast, rawConfig)
+            let tpl = template.compileAST(compiled.ast, rawConfig);
+            
+            process.env.NODE_ENV === 'development' &&
+                template.writeTemplateToFIle(tpl, path, rawConfig);
+
+            return tpl
         })
     },
     compile (content, rawConfig) {
@@ -1019,8 +1024,6 @@ let template = {
         let compileOptions = config[`${rawConfig.plat}2vueOptions`].compileOptions;
         let compile = createCompiler(compileOptions).compile;
         let ast = compile(content, compileOptions);
-
-        console.log(ast);
 
         return {
             errors: [],
@@ -1031,9 +1034,13 @@ let template = {
         let astHandle = config[`${rawConfig.plat}2vueOptions`].compileASTHandle;
         let tpl = astHandle.compile(ast);
 
-        console.log(tpl);
-
         return tpl
+    },
+    writeTemplateToFIle (tpl, rawFilePath, rawConfig) {
+        let writePath = path.join(__dirname, rawConfig.writePath || './');
+        console.log(rawFilePath, writePath);
+        let writeFileName = rawFilePath.match(/([^\\|\/]+)\..*$/)[1];
+        fs.writeFileSync(writePath + writeFileName+'.html', tpl);
     },
 };
 
@@ -1063,6 +1070,7 @@ function convert(folder, config) {
     let compilerHandle = config.type;
     let handle = fileHandle.extract(folders, config);
         handle.forEach(item => {
+            // console.log('Handle File: ', item)
             res.push(
                 fileHandle[compilerHandle].convert(item, config)
             );
@@ -1077,9 +1085,9 @@ var Compiler = {
     convert
 };
 
-const path = require('path');
+const path$1 = require('path');
 
-var unsolvedFolder = path.resolve(__dirname, '../src/swan/swan-template');
+var unsolvedFolder = path$1.resolve(__dirname, '../src/swan/swan-template');
 // console.log(unsolvedFolder)
 
 Compiler.convert(unsolvedFolder, {

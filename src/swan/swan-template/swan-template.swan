@@ -8,4 +8,7 @@
     <view class="red-body" data-id="testid" click="testclick">
         <view>{{msg}}</view>
     </view>
+
+    <!-- webview -->
+    <web-view src="http://www.baidu.com/"></web-view>
 </view>
