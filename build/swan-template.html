@@ -1,31 +1,49 @@
 <div class="page">
 
-    <!--  view  -->
-    <div>
-        <div class="title">横向布局</div>
-        <div class="rowlike">
-            <div class="color-a">
-                <span>A</span>
-            </div>
-            <div class="color-b">
-                <span>B</span>
-            </div>
-            <div class="color-c">
-                <span>C</span>
+    <!--  checkbox  -->
+    <div class="checkbox-test">
+        <div class="wrap">
+            <div class="title">默认样式</div>
+            <input class="checkbox" checked type="checkbox">&nbsp;&nbsp;选中</input>
+            <input class="checkbox" type="checkbox">&nbsp;&nbsp;未选中</input>
+
+            <div class="title">推荐示例</div>
+            <div class="item-wrap">
+                <div s-for="item in items" class="item">
+                    <input value="{{item.value}}" checked="{{item.checked}}" type="checkbox">&nbsp;&nbsp;{{item.text}}</input>
+                </div>
             </div>
         </div>
     </div>
-    <div>
-        <div class="title">纵向布局</div>
-        <div class="collike">
-            <div class="color-a">
-                <span>A</span>
+
+    <!--  view  -->
+    <div class="view-test">
+        <div>
+            <div class="title">横向布局</div>
+            <div class="rowlike">
+                <div class="color-a">
+                    <span>A</span>
+                </div>
+                <div class="color-b">
+                    <span>B</span>
+                </div>
+                <div class="color-c">
+                    <span>C</span>
+                </div>
             </div>
-            <div class="color-b">
-                <span>B</span>
-            </div>
-            <div class="color-c">
-                <span>C</span>
+        </div>
+        <div>
+            <div class="title">纵向布局</div>
+            <div class="collike">
+                <div class="color-a">
+                    <span>A</span>
+                </div>
+                <div class="color-b">
+                    <span>B</span>
+                </div>
+                <div class="color-c">
+                    <span>C</span>
+                </div>
             </div>
         </div>
     </div>

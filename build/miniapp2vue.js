@@ -37,7 +37,7 @@ function makeAttrsMap(attrs) {
 /**
  * Mix properties into target object.
  */
-function extend$1(to, _from) {
+function extend(to, _from) {
     for (var key in _from) {
         to[key] = _from[key];
     }
@@ -461,6 +461,8 @@ function parseHTML(html, options) {
             while (!(end = html.match(startTagClose)) && (attr = html.match(attribute))) {
                 advance(attr[0].length);
                 match.attrs.push(attr);
+                // start[1] === 'checkbox' && 
+                //     console.log(attr[0])
             }
 
             if (end) {
@@ -622,15 +624,6 @@ function createCompilerCreator(baseCompile) {
             var errors = [];
             var tips = [];
 
-            if (options) {
-                // copy other options
-                for (var key in options) {
-                    if (key !== 'modules' && key !== 'directives') {
-                        finalOptions[key] = options[key];
-                    }
-                }
-            }
-
             var compiled = baseCompile(template, finalOptions);
 
             compiled.errors = errors;
@@ -641,7 +634,6 @@ function createCompilerCreator(baseCompile) {
 
         return {
             compile: compile,
-            // compileToFunctions: createCompileToFunctionFn(compile)
         }
     }
 }
@@ -669,6 +661,10 @@ function parse (template, options) {
 
 
     function closeElement(element) {
+        
+        // element.tag === 'checkbox' &&
+        //     console.log(element)
+
         // check pre state
         if (element.pre) {
             inVPre = false;
@@ -691,6 +687,9 @@ function parse (template, options) {
 
             var element = createASTElement(tag, attrs, currentParent);
 
+            // tag === 'checkbox' &&
+            //     console.log(tag, attrs, element)
+
             if (ns) {
                 element.ns = ns;
             }
@@ -702,15 +701,8 @@ function parse (template, options) {
             // tree management
             if (!root) {
                 root = element;
-            } else if (!stack.length) {
-                // allow root elements with v-if, v-else-if and v-else
-                if (root.if && (element.elseif || element.else)) {
-                    addIfCondition(root, {
-                        exp: element.elseif,
-                        block: element
-                    });
-                }
             }
+
             if (currentParent && !element.forbidden) {
                 if (element.elseif || element.else) {
                     processIfConditions(element, currentParent);
@@ -767,6 +759,8 @@ var createCompiler = createCompilerCreator(function baseCompile(
     options
 ) {
     var ast = parse(template.trim(), options);
+
+    // console.log(ast.children)
 
     return ast
 });
@@ -851,8 +845,7 @@ const tagConvertMap = {
     'rich-text': 'iframe-indoc',
     'progress': 'progress',
     'button': 'button',
-    'checkbox': 'checkbox',
-    'checkbox-group': 'checkbox-group',
+    'checkbox': 'input',
     'form': 'form',
     'input': 'input',
     'label': 'label',
@@ -865,6 +858,24 @@ const tagConvertMap = {
     'video': 'video',
     'canvas': 'canvas',
     'web-view': 'iframe',
+};
+const specialTagHandle = {
+    checkbox (node) {
+        /** 处理 type checkbox */
+        node.attrsList.push({
+            name: 'type',
+            value: node.tag
+        });
+        node.attrsMap.type = node.tag;
+        /** 处理 checked 属性 */
+        if (node.attrsMap.checked === 'false') {
+            delete node.attrsMap.checked;
+            node.attrsList.splice(
+                node.attrsList.findIndex(attr => attr.name === 'checked'),
+                1
+            );
+        }
+    }
 };
 const isWhiteTag = (tagName) => {
     return tagConvertMap[tagName]
@@ -896,7 +907,11 @@ function compileASTToTemplate (ast) {
      */
     function handleTagConvert (node) {
         if (isWhiteTag(node.tag)) {
-            node.tag = tagConvertMap[node.tag];
+
+            specialTagHandle[node.tag] &&
+                specialTagHandle[node.tag](node);
+
+            node.tag = tagConvertMap[node.tag];            
         }
         // console.log(tpl)
     }
@@ -1096,7 +1111,7 @@ const fileHandle = {
  */
 function convert(folder, config) {
 
-    config = extend$1({ type: "all" }, config);
+    config = extend({ type: "all" }, config);
 
     let folders = folder instanceof Array ? folder : [folder];
 

@@ -8,35 +8,33 @@ page,
     background: #ddd;
 }
 
-.rowlike {
+/** view-test */
+
+.view-test .rowlike {
     width: 90%;
     margin: 0 auto;
     display: flex;
     height: 1.5rem;
     line-height: 1.5rem;
 }
-
-.view-title {
+.view-test .view-title {
     display: block;
     margin: .25rem .18rem .18rem;
     color: #666;
 }
-
-.rowlike view {
+.view-test .rowlike view {
     flex: 1;
     text-align: center;
     font-size: .24rem;
     color: #FFF;
     font-weight: 700;
 }
-
-.collike {
+.view-test .collike {
     margin: 0 auto;
     flex-direction: column;
     width: 2.4rem;
 }
-
-.collike view {
+.view-test .collike view {
     height: 1.2rem;
     line-height: 1.2rem;
     flex: 1;
@@ -45,12 +43,32 @@ page,
     color: #FFF;
     font-weight: 700;
 }
-.color-a {
+.view-test .color-a {
     background-color: #6895FF;
 }
-.color-b {
+.view-test .color-b {
     background-color: #8FB1FF;
 }
-.color-c {
+.view-test .color-c {
     background-color: #C3D1FF;
+}
+
+/** checkbox-test */
+
+.checkbox-test .wrap {
+    font-size: .16rem;
+}
+.checkbox-test .checkbox {
+    margin: 0 .25rem;
+}
+.checkbox-test .item-wrap {
+    background: #fff;
+}
+.checkbox-test .item {
+    padding: .15rem 0;
+    border-bottom: 1px #f5f5f5 solid;
+    margin-left: .2rem;
+}
+.checkbox-test .switch {
+    float: right;
 }
