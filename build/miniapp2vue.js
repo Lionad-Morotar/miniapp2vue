@@ -1061,8 +1061,10 @@ let template = {
         let writePath = path.join(__dirname, rawConfig.writePath || './');
         console.log(rawFilePath, writePath);
         let writeFileName = rawFilePath.match(/([^\\|\/]+)\..*$/)[1];
+        
+        fs.mkdir(writePath + writeFileName, () => {});
         fs.writeFileSync(
-            writePath + writeFileName+'.html', 
+            writePath + writeFileName + path.sep + writeFileName+'.html', 
             tpl + `
                 <script src="./swan-template.js"></script>
                 <link rel="stylesheet" href="./swan-template.css" type="text/css" />
@@ -1093,7 +1095,8 @@ let style = {
         let writePath = path$1.join(__dirname, rawConfig.writePath || './');
         let writeFileName = rawFilePath.match(/([^\\|\/]+)\..*$/)[1];
 
-        fs$1.writeFileSync(writePath + writeFileName+'.css', tpl);
+        fs$1.mkdir(writePath + writeFileName, () => {});
+        fs$1.writeFileSync(writePath + writeFileName + path$1.sep + writeFileName+'.css', tpl);
     },
 };
 
