@@ -44,25 +44,29 @@ function extend$1(to, _from) {
     return to;
 }
 
+const fixMap = {
+    swan: {
+        template: '.swan',
+        style: '.css',
+        logic: '.js',
+        config: '.json',
+    },
+};
+const typeMap = {
+    all: ['template', 'style', 'logic', 'config'],
+    config: ['config'],
+    template: ['template'],
+    style: ['style'],
+    logic: ['logic'],
+};
+
 function extract(folders, config) {
-    const fixMap = {
-        swan: {
-            templateFile: '.swan',
-            styleFile: '.css',
-            logicFile: '.js',
-            configFile: '.json',
-        },
-    };
-    const typeMap = {
-        all: ['template', 'style', 'logic', 'config'],
-        config: ['config'],
-        template: ['template'],
-        style: ['style'],
-        logic: ['logic'],
-    };
     let plat = config.plat;
     let type = config.type,
-        fileType = typeMap[type];
+        fileType = type instanceof Array ?
+            type.reduce((a, c) => { return a.concat(typeMap[c]) }, []) :
+            typeMap[type];
+    // console.log(fileType)
     let files = [];
 
     folders.forEach(folder => {
@@ -70,10 +74,10 @@ function extract(folders, config) {
         // console.log('folder', folder)
         let fileName = folder.replace(/\\/g, '/').replace(/^.*\/([^\/]*)$/, '$1'),
             fileNamePrefix = `${folder}/${fileName}`;
-        let templateFile = `${fileNamePrefix}${afterFix['templateFile']}`,
-            styleFile = `${fileNamePrefix}${afterFix['styleFile']}`,
-            logicFile = `${fileNamePrefix}${afterFix['logicFile']}`,
-            configFile = `${fileNamePrefix}${afterFix['configFile']}`;
+        let templateFile = `${fileNamePrefix}${afterFix['template']}`,
+            styleFile = `${fileNamePrefix}${afterFix['style']}`,
+            logicFile = `${fileNamePrefix}${afterFix['logic']}`,
+            configFile = `${fileNamePrefix}${afterFix['config']}`;
         files.push({
             templateFile,
             styleFile,
@@ -87,6 +91,8 @@ function extract(folders, config) {
         return fileType.map(type => file[`${type}File`])
     })
 }
+extract.fixMap = fixMap;
+extract.typeMap = typeMap;
 
 /**
  * @file Origin Code from VueJS modified by Lionad tangnad@qq.com
@@ -858,7 +864,7 @@ const tagConvertMap = {
     'image': 'img',
     'video': 'video',
     'canvas': 'canvas',
-    'wev-view': 'iframe-src',
+    'web-view': 'iframe',
 };
 const isWhiteTag = (tagName) => {
     return tagConvertMap[tagName]
@@ -881,7 +887,9 @@ function compileASTToTemplate (ast) {
 
     process(ast);
 
-    console.log(tpl);
+    // console.log(tpl)
+
+    return tpl
 
     /**
      * 處理Tag轉換
@@ -955,6 +963,7 @@ function compileASTToTemplate (ast) {
      * 处理单个节点
      */
     function createTag(node) {
+        // console.log(node.tag)
         switch (node.type) {
             case 1:
                 handleTagConvert(node);
@@ -973,7 +982,6 @@ function compileASTToTemplate (ast) {
                 }
             break
         }
-        return tpl
     }
 
     /**
@@ -988,13 +996,16 @@ var swan2vueOptions = {
 
     compileOptions,
 
+    postcssPlugins: [],
+
     compileASTHandle: {
         compile: compileASTToTemplate
-    }
+    },
     
 };
 
 const fs = require('fs');
+const path = require('path');
 
 const config = {
     swan2vueOptions,
@@ -1004,23 +1015,21 @@ const config = {
 // const isReservedAttribute = makeMap('key,ref,slot,slot-scope,is')
 
 let template = {
-    convert (paths, rawConfig) {
-        return paths.map(path => {
-            let content = fs.readFileSync(path, 'utf8');
-            let compiled = template.compile(content, rawConfig);
-            if (compiled.errors.length) {
-                throw new Error(compiled.errors[0])
-            }
-            return template.compileAST(compiled.ast, rawConfig)
-        })
+    convert (path, rawConfig) {
+        let content = fs.readFileSync(path, 'utf8');
+        let compiled = template.compile(content, rawConfig);
+        let tpl = template.compileAST(compiled.ast, rawConfig);
+        
+        process.env.NODE_ENV === 'development' &&
+            template.writeTemplateToFIle(tpl, path, rawConfig);
+
+        return tpl
     },
     compile (content, rawConfig) {
 
         let compileOptions = config[`${rawConfig.plat}2vueOptions`].compileOptions;
         let compile = createCompiler(compileOptions).compile;
         let ast = compile(content, compileOptions);
-
-        console.log(ast);
 
         return {
             errors: [],
@@ -1031,58 +1040,97 @@ let template = {
         let astHandle = config[`${rawConfig.plat}2vueOptions`].compileASTHandle;
         let tpl = astHandle.compile(ast);
 
-        console.log(tpl);
-
         return tpl
+    },
+    writeTemplateToFIle (tpl, rawFilePath, rawConfig) {
+        let writePath = path.join(__dirname, rawConfig.writePath || './');
+        console.log(rawFilePath, writePath);
+        let writeFileName = rawFilePath.match(/([^\\|\/]+)\..*$/)[1];
+        fs.writeFileSync(
+            writePath + writeFileName+'.html', 
+            tpl + `
+                <script src="./swan-template.js"></script>
+                <link rel="stylesheet" href="./swan-template.css" type="text/css" />
+            `
+        );
+    },
+};
+
+const fs$1 = require('fs');
+const path$1 = require('path');
+const postcss = require('postcss');
+
+let style = {
+    convert (path, rawConfig) {
+        let content = fs$1.readFileSync(path, 'utf8');
+
+        postcss(swan2vueOptions.postcssPlugins)
+            .process(content, { from: undefined, to: undefined })
+            .then(compiled => {
+                // console.log(compiled)
+
+                process.env.NODE_ENV === 'development' &&
+                    style.writeStyleToFIle(compiled.css, path, rawConfig);
+            });
+
+    },
+    writeStyleToFIle (tpl, rawFilePath, rawConfig) {
+        let writePath = path$1.join(__dirname, rawConfig.writePath || './');
+        let writeFileName = rawFilePath.match(/([^\\|\/]+)\..*$/)[1];
+
+        fs$1.writeFileSync(writePath + writeFileName+'.css', tpl);
     },
 };
 
 const fileHandle = {
     extract,
-    template
+    template,
+    style,
 };
 
 /** Compiler
  *
  * @var { Array, String } folder 
  * @var { String } config.plat required [ 'swan', 'wx', 'ali' ]
- * @var { String } config.type [ 'template', 'javascript', 'all' ]
+ * @var { String } config.type [ 'template', 'style', 'javascript', 'all' ]
  */
 function convert(folder, config) {
-
-    /** var starndards */
 
     config = extend$1({ type: "all" }, config);
 
     let folders = folder instanceof Array ? folder : [folder];
-    let res = [];
 
-    /** logic */
 
-    // let compilerName = `${config.plat}2vue`,
-    let compilerHandle = config.type;
-    let handle = fileHandle.extract(folders, config);
-        handle.forEach(item => {
-            res.push(
-                fileHandle[compilerHandle].convert(item, config)
-            );
+    /** 遍历每一个页面, 不同的文件后缀采用不同的compiler转换 */
+
+    let pages = fileHandle.extract(folders, config);
+        pages.forEach(pageComponent => {
+            pageComponent.forEach(file => {
+                let suffixMap = extract.fixMap[config.plat],
+                    suffixMapRev = {},
+                    suffixRe = /\..*$/;
+                
+                for (let key in suffixMap) {
+                    suffixMapRev[suffixMap[key]] = key;
+                }
+                let suffix = file.match(suffixRe),
+                    compilerHandle = suffixMapRev[suffix];
+
+                fileHandle[compilerHandle].convert(file, config);
+            });
         });
-
-    /** return val */
-
-    return res
 }
 
 var Compiler = {
     convert
 };
 
-const path = require('path');
+const path$2 = require('path');
 
-var unsolvedFolder = path.resolve(__dirname, '../src/swan/swan-template');
+var unsolvedFolder = path$2.resolve(__dirname, '../src/swan/swan-template');
 // console.log(unsolvedFolder)
 
 Compiler.convert(unsolvedFolder, {
     plat: 'swan',
-    type: 'template',
+    type: ['template', 'style'],
 });

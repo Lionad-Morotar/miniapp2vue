@@ -7,5 +7,5 @@ var unsolvedFolder = path.resolve(__dirname, '../src/swan/swan-template')
 
 Compiler.convert(unsolvedFolder, {
     plat: 'swan',
-    type: 'template',
+    type: ['template', 'style'],
 })
