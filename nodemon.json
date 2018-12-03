@@ -2,7 +2,8 @@
 	"restartable": "rs",
 	"verbose": true,
 	"watch": [
-		"build/miniapp2vue.js"
+		"build/miniapp2vue.js",
+		"src/swan/**/*"
 	],
 	"ignore": [
 		".git", ".svn", ".tmp", "dist", "node_modules/*/node_modules"
@@ -10,6 +11,6 @@
 	"env": {
 		"NODE_ENV": "development"
 	},
-	"ext": "js json",
+	"ext": "js json swan css html wxml",
 	"exec": "npm run clear:windows && node --harmony ./build/miniapp2vue.js"
 }
