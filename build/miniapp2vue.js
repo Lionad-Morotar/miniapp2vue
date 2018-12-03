@@ -62,7 +62,10 @@ function extract(folders, config) {
     };
     let plat = config.plat;
     let type = config.type,
-        fileType = typeMap[type];
+        fileType = type instanceof Array ?
+            type.reduce((a, c) => { return a.concat(typeMap[c]) }, []) :
+            typeMap[type];
+    // console.log(fileType)
     let files = [];
 
     folders.forEach(folder => {
@@ -1092,5 +1095,5 @@ var unsolvedFolder = path$1.resolve(__dirname, '../src/swan/swan-template');
 
 Compiler.convert(unsolvedFolder, {
     plat: 'swan',
-    type: 'template',
+    type: ['template', 'style'],
 });
