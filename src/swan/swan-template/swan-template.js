@@ -1,48 +1,38 @@
-const app = getApp();
+/**
+ * @file source code come from swan demo
+ * @author lijiahui(lijiahui02@baidu.com)
+ */
 
 Page({
 
     data: {
-        msg: 'Hello World.',
-        checked: true
-    },
-    dataStore: {
-        msg: 'Hello World 2'
-    },
-
-    onShareAppMessage () {
-        return {
-            title: 'swan-template',
-            path: `/pages/swan-template/swan-template`,
-            success (res) {
-                // è½¬åæå
+        items: [
+            {
+                value: 'China',
+                text: '中国'
             },
-            fail (res) {
-                // è½¬åå¤±è´¥
+            {
+                value: 'US',
+                text: '美国'
+            },
+            {
+                value: 'Britain',
+                text: '英国',
+                checked: true
             }
-        }
+        ],
+        result: []
     },
 
-    onUnload () {
-
-        console.log('onUnload')
-
+    checkboxChange: e => {
+        console.log(e);
+        // this.setData(
+        //     'result', e.detail
+        // );
     },
 
-    onLoad (options) {
-
-        console.log('onLoad')
-
-    },
-
-    onReady () {
-
-        console.log('onReady')
-
-    },
-
-    testclick (e) {
-        console.log(e.target && e.target.dataset.testid)
-    },
+    formSubmit: e => {
+        console.log('ljh', e);
+    }
 
 })
