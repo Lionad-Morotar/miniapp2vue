@@ -1,3 +1,7 @@
+# PROJECT 项目介绍
+
+miniapp2vue 是一个将小程序模板(HTML/STYLE/JS)解析为AST, 编译为VueJS单组件的项目, 功能简单, 仅作思路参考使用.
+
 # ENVIRONMENT 开发环境
 
 1. npm install;
@@ -8,12 +12,10 @@
 
 * 百度小程序
 
-- [ ] template 模板转换
-- [ ] css 样式转换
-- [ ] js 逻辑转换
+- [x] template 模板转换
+- [x] css 样式转换
+- [working on] js 逻辑转换
 
-* 支付宝小程序
+# AFTER 项目后续
 
-* 微信小程序
-
-* 字节跳动小程序
+> 完成简单解析小程序JS后, 项目已经完成了小程序模板编译的一个基础功能, 作者将不再维护.
