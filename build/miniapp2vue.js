@@ -1026,19 +1026,18 @@ const config = {
     swan2vueOptions,
 };
 
-// const isBuiltInTag = makeMap('slot,component')
-// const isReservedAttribute = makeMap('key,ref,slot,slot-scope,is')
-
 let template = {
     convert (path, rawConfig) {
-        let content = fs.readFileSync(path, 'utf8');
-        let compiled = template.compile(content, rawConfig);
-        let tpl = template.compileAST(compiled.ast, rawConfig);
-        
-        process.env.NODE_ENV === 'development' &&
-            template.writeTemplateToFIle(tpl, path, rawConfig);
-
-        return tpl
+        return new Promise((resolve, reject) => {
+            let content = fs.readFileSync(path, 'utf8');
+            let compiled = template.compile(content, rawConfig);
+            let tpl = template.compileAST(compiled.ast, rawConfig);
+            
+            process.env.NODE_ENV === 'development' &&
+                template.writeTemplateToFIle(tpl, path, rawConfig);
+    
+            resolve(tpl);
+        })
     },
     compile (content, rawConfig) {
 
@@ -1079,17 +1078,20 @@ const postcss = require('postcss');
 
 let style = {
     convert (path, rawConfig) {
-        let content = fs$1.readFileSync(path, 'utf8');
-
-        postcss(swan2vueOptions.postcssPlugins)
-            .process(content, { from: undefined, to: undefined })
-            .then(compiled => {
-                // console.log(compiled)
-
-                process.env.NODE_ENV === 'development' &&
-                    style.writeStyleToFIle(compiled.css, path, rawConfig);
-            });
-
+        return new Promise((resolve, reject) => {
+            let content = fs$1.readFileSync(path, 'utf8');
+    
+            postcss(swan2vueOptions.postcssPlugins)
+                .process(content, { from: undefined, to: undefined })
+                .then(compiled => {
+                    // console.log(compiled)
+    
+                    process.env.NODE_ENV === 'development' &&
+                        style.writeStyleToFIle(compiled.css, path, rawConfig);
+    
+                    resolve(compiled.css);
+                });
+        })
     },
     writeStyleToFIle (tpl, rawFilePath, rawConfig) {
         let writePath = path$1.join(__dirname, rawConfig.writePath || './');
@@ -1100,10 +1102,22 @@ let style = {
     },
 };
 
+const fs$2 = require('fs');
+const path$2 = require('path');
+
+let sfc = {
+    compile (pageContent) {
+        return new Promise((resolve, reject) => {
+            console.log(pageContent);
+        })
+    }
+};
+
 const fileHandle = {
     extract,
     template,
     style,
+    sfc,
 };
 
 /** Compiler
@@ -1118,11 +1132,21 @@ function convert(folder, config) {
 
     let folders = folder instanceof Array ? folder : [folder];
 
-
     /** 遍历每一个页面, 不同的文件后缀采用不同的compiler转换 */
 
     let pages = fileHandle.extract(folders, config);
         pages.forEach(pageComponent => {
+            let pageContent = {},
+                done = 0;
+
+            function checkCompileSFC (done) {
+                done === pageComponent.length &&
+                    fileHandle.sfc.compile(pageContent)
+                        .then(res => {
+                            console.log('done');
+                        });
+            }
+
             pageComponent.forEach(file => {
                 let suffixMap = extract.fixMap[config.plat],
                     suffixMapRev = {},
@@ -1134,7 +1158,12 @@ function convert(folder, config) {
                 let suffix = file.match(suffixRe),
                     compilerHandle = suffixMapRev[suffix];
 
-                fileHandle[compilerHandle].convert(file, config);
+                fileHandle[compilerHandle]
+                    .convert(file, config)
+                    .then(res => {
+                        pageContent[suffix] = res;
+                        checkCompileSFC(++done);
+                    });
             });
         });
 }
@@ -1143,9 +1172,9 @@ var Compiler = {
     convert
 };
 
-const path$2 = require('path');
+const path$3 = require('path');
 
-var unsolvedFolder = path$2.resolve(__dirname, '../src/swan/swan-template');
+var unsolvedFolder = path$3.resolve(__dirname, '../src/swan/swan-template');
 // console.log(unsolvedFolder)
 
 Compiler.convert(unsolvedFolder, {
