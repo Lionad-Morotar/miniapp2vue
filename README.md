@@ -10,7 +10,7 @@ miniapp2vue 是一个将小程序模板(HTML/STYLE/JS)解析为AST, 编译为Vue
 
 # DONE & TODO 任务说明
 
-* 工具
+## 工具
 
 - [x] wechat | ali | swan 之间的 app.json 相互转换
 
@@ -30,7 +30,7 @@ miniapp2vue 是一个将小程序模板(HTML/STYLE/JS)解析为AST, 编译为Vue
 
 > https://megalojs.org/#/config/app?id=tabbar-转换对照
 
-* 百度小程序
+## 百度小程序
 
 - [x] template 模板转换
 - [x] css 样式转换
